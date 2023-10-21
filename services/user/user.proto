@@ -7,11 +7,12 @@ service UserService {
 }
 
 message LoginRequest {
-  string username = 1;
+  string email = 1;
   string hashed_password = 2;
 }
 
 message LoginResponse {
-  string auth_token = 1;
-  string refresh_token = 2;
+  string identity_token = 1;
+  string access_token = 2;
+  string refresh_token = 3;
 }
