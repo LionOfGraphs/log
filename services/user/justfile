@@ -2,3 +2,6 @@ set dotenv-load := false
 
 proto:
     python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. user.proto
+
+genmock:
+    python -c 'import sqlite3; conn = sqlite3.connect("db.sqlite3", check_same_thread=False);cur = conn.cursor();cur.execute("DROP TABLE user");q ="""CREATE TABLE user(    user_id text,        username text,    full_name text,    email text,    user_disabled boolean,    double_hashed_password text)""";cur.execute(q);q2 = """INSERT INTO user VALUES ("uuid1", "foo", "foo", "foo", false, "bd142ccf5968384068077c58de4d3ad833204a151d3e9f1182703f07b69125b8")""";cur.execute(q2);q3 = """SELECT * FROM user"""; print([row for row in cur.execute(q3)]); res = cur.execute("SELECT double_hashed_password FROM user WHERE email=?", ("foo",)); conn.commit(); print("user db set done as above")'
