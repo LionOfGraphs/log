@@ -19,7 +19,7 @@ class FileModel(DataModel):
     filename: str
     axis: List[str] = ["y"]
     column_names: dict = {"y": "y"}
-    
+
 
 class FunctionModel(DataModel):
     function: str

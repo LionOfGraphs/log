@@ -1,6 +1,7 @@
-from fastapi import FastAPI, UploadFile
+from fastapi import UploadFile
 
 from models.payload import PayloadModel
+from utils.exceptions import InvalidRequestError
 from utils.validator import validate_data
 from utils.wrapper import build_image
 

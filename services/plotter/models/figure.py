@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from matplotlib.layout_engine import LayoutEngine
 
-from _models.kwargs import KwargsFigureModel
+from models.kwargs import KwargsFigureModel
 
 
 """
@@ -33,9 +33,7 @@ class FigureModel(BaseModel):
     linewidth: float = 0.0
     frameon: bool = True
     subplotpars: SubplotParamsModel = SubplotParamsModel()
-    layout: Optional[
-        Literal["constrained", "compressed", "tight"] | LayoutEngine | None
-    ]
+    # layout: Optional[Literal["constrained", "compressed", "tight"] | LayoutEngine | None]
     # kwargs: Optional[KwargsFigureModel]
 
     class Config:

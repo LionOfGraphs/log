@@ -3,7 +3,7 @@ from typing import List
 from pandas import DataFrame, read_csv
 
 from models.data import DataModel
-from exceptions import InvalidRequestError
+from utils.exceptions import InvalidRequestError
 
 
 def validate_data(dataList: List[DataModel], rawData: UploadFile = None) -> DataFrame:
@@ -11,9 +11,9 @@ def validate_data(dataList: List[DataModel], rawData: UploadFile = None) -> Data
         if data.datatype == "file":
             if rawData is None:
                 raise Exception("Expected file for file datatype.")
-    
-            dataframe = read_csv(rawData.file, sep=',', index_col=0)[data.axis]
-            dataframe = dataframe.rename(data.column_names, axis='columns')
+
+            dataframe = read_csv(rawData.file, sep=",", index_col=0)[data.axis]
+            dataframe = dataframe.rename(data.column_names, axis="columns")
 
             dataframe = validate_dataframe(dataframe=dataframe)
 

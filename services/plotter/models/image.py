@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-from _models.figure import FigureModel
-from _models.layout import LayoutModel
-from _models.plot import PlotModel
+from models.figure import FigureModel
+from models.layout import LayoutModel
+from models.plot import PlotModel
 
 
 class GraphModel(BaseModel):
@@ -13,7 +13,7 @@ class GraphModel(BaseModel):
 
 class ImageModel(BaseModel):
     save: bool = False
-    format: str = 'png'
+    format: str = "png"
     figure: FigureModel = FigureModel()
     layout: LayoutModel = LayoutModel()
     graphs: List[GraphModel] = [GraphModel()]
@@ -21,3 +21,4 @@ class ImageModel(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
