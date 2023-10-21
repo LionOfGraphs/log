@@ -2,11 +2,11 @@ from pydantic import BaseModel
 
 # UserInfo will contain the whole information of the user
 class UserInfo(BaseModel):
-    user_id: int
-    username: str
+    user_id: str
+    username: str | None = None
     full_name: str | None = None
     email: str | None = None
-    disabled: bool | None = None
+    user_disabled: bool | None = None
 
 # DbUser model contains the row information on the user table
 class DbUser(UserInfo):

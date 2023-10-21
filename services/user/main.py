@@ -11,12 +11,14 @@ import database
 def serve():
     address = config("SERVER_ADDRESS")
     database_address = config("DATABASE_ADDRESS")
+    jwk = config("JWK")
 
     service_database_client = database.DatabaseClient(
         address = database_address,
     )
     service_handler = service.UserService(
         db = service_database_client,
+        jwk = jwk,
     )
     service_servicer = server.UserServiceServicer(
         service_handler = service_handler,

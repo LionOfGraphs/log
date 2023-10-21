@@ -12,14 +12,18 @@ class DatabaseClient(object):
     
     def GetLoginUser(self, email : str) -> model.DbUser:
         cur = self._con.cursor()
-        res = cur.execute("SELECT hashed_password FROM user WHERE email=?", email)
-        double_hashed_passwords = res.fetchall()
+        res = cur.execute("SELECT user_id, username, full_name, email, user_disabled, double_hashed_password FROM user WHERE email=?", (email,))
+        user_rows = res.fetchall()
 
-        if double_hashed_passwords.__len__ != 1 or double_hashed_passwords[0].__len__ != 1:
-            # TODO: named exceptions
-            raise Exception("expected the login to be there")
+        if len(user_rows) != 1 or len(user_rows[0]) < 6:
+            # TODO: named exceptions without leaking info
+            raise Exception(f"unexpected rows for the email: {email}, rows: {user_rows}")
 
-        double_hashed_password = double_hashed_passwords[0][0]
         return model.DbUser(
-            double_hashed_password=double_hashed_password
+            user_id=user_rows[0][0],
+            username=user_rows[0][1],
+            full_name=user_rows[0][2],
+            email=user_rows[0][3],
+            user_disabled=user_rows[0][4],
+            double_hashed_password= user_rows[0][5],
         )
