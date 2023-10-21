@@ -1,0 +1,2 @@
+proto:
+    python -m grpc_tools.protoc -I../user --python_out=. --pyi_out=. --grpc_python_out=. user.proto
