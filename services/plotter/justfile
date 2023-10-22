@@ -1,13 +1,5 @@
 set shell := ["cmd.exe", "/c"]
 
-venv:
-    if not exist venv ( python -m venv venv && pip install -r requirements.dev.txt )
-
-proto: venv
-    if not exist *_pb2* ( .\venv\Scripts\python -m grpc_tools.protoc -I./proto --python_out=. --pyi_out=. --grpc_python_out=. ./proto/users.proto )
-
-run: proto
-    .\venv\Scripts\python server.py
-
-clean:
-    if exist *_pb2* ( del *_pb2* )
+proto:
+    python -m grpc_tools.protoc -I./proto --python_out=./proto --pyi_out=./proto --grpc_python_out=./proto ./proto/plotter.proto
+    

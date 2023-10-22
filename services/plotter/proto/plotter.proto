@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package plotter;
+
+service PlotterService {
+    rpc GeneratePlot(PlotRequest) returns (PlotResponse);
+}
+
+message PlotRequest {
+    bytes rawData = 1;
+    bytes encodedPayload = 2;
+}
+
+message PlotResponse {
+    bytes image = 1;
+}
