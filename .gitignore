@@ -301,3 +301,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# python generated proto
+*_pb2*.py*
+
+# local databases
+*.sqlite3
