@@ -1,5 +1,3 @@
-from fastapi import UploadFile
-
 from models.payload import PayloadModel
 from utils.validator import validate_data
 from utils.wrapper import build_image

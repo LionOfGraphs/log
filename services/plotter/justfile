@@ -1,5 +1,12 @@
 set shell := ["cmd.exe", "/c"]
 
+clear-venv:
+    rm -r venv
+
+build-venv:
+    python -m venv venv
+    pip install -r requirements.dev.txt
+
 test:
     venv\Scripts\activate && python test_client.py
 
