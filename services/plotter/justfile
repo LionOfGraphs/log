@@ -1,0 +1,18 @@
+set shell := ["cmd.exe", "/c"]
+
+clear-venv:
+    rm -r venv
+
+build-venv:
+    python -m venv venv
+    pip install -r requirements.dev.txt
+
+test:
+    venv\Scripts\activate && python test_client.py
+
+server:
+    venv\Scripts\activate && python server.py
+
+proto:
+    python -m grpc_tools.protoc -I./proto --python_out=./proto --pyi_out=./proto --grpc_python_out=./proto ./proto/plotter.proto
+    
