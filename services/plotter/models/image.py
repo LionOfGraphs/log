@@ -12,7 +12,7 @@ class GraphModel(BaseModel):
 
 
 class ImageModel(BaseModel):
-    save: bool = False
+    save: bool = True
     format: str = "png"
     figure: FigureModel = FigureModel()
     layout: LayoutModel = LayoutModel()

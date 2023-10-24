@@ -1,13 +1,13 @@
 from io import BytesIO
+from typing import List
+
 import matplotlib
-from matplotlib.pyplot import figure
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
-from matplotlib.axes import Axes
-
 from models.payload import PayloadModel
-from models.image import FigureModel, LayoutModel, GraphModel
+from models.image import FigureModel, LayoutModel, GraphModel, PlotModel
 
 
 matplotlib.use("agg")
@@ -16,7 +16,7 @@ matplotlib.use("agg")
 def build_image(payload: PayloadModel):
     fig: Figure = build_figure(figureModel=payload.image.figure)
     axes: dict = build_layout(layoutModel=payload.image.layout, fig=fig)
-
+    
     buffer = BytesIO()
     if payload.image.save:
         fig.savefig(buffer, format=payload.image.format)
@@ -25,7 +25,7 @@ def build_image(payload: PayloadModel):
 
 
 def build_figure(figureModel: FigureModel) -> Figure:
-    fig: Figure = figure(**figureModel.dict())
+    fig: Figure = plt.figure(**figureModel.dict())
 
     return fig
 
@@ -37,5 +37,9 @@ def build_layout(layoutModel: LayoutModel, fig: Figure) -> dict:
     return {id0: axes0}
 
 
-def build_graphs(graphModel: GraphModel):
+def build_graphs():
     pass
+
+def build_plots():
+    pass
+

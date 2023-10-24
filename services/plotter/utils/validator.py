@@ -1,18 +1,19 @@
-from fastapi import UploadFile
 from typing import List
 from pandas import DataFrame, read_csv
 
 from models.data import DataModel
 from utils.exceptions import InvalidRequestError
 
+from io import BytesIO
 
-def validate_data(dataList: List[DataModel], rawData: UploadFile = None) -> DataFrame:
+
+def validate_data(dataList: List[DataModel], rawData: bytes = None) -> DataFrame:
     for data in dataList:
         if data.datatype == "file":
             if rawData is None:
                 raise Exception("Expected file for file datatype.")
 
-            dataframe = read_csv(rawData.file, sep=",", index_col=0)[data.axis]
+            dataframe = read_csv(BytesIO(rawData), sep=",", index_col=0)[data.axis]
             dataframe = dataframe.rename(data.column_names, axis="columns")
 
             dataframe = validate_dataframe(dataframe=dataframe)
