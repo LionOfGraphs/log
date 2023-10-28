@@ -10,6 +10,7 @@ from models.kwargs import KwargsLine2DModel, KwargsCollectionModel
 
 class PlotModel(BaseModel):
     plotID: int = 0
+    plotType: str = "LinePlotModel"
 
     class Config:
         arbitrary_types_allowed = True
