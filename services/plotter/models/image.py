@@ -8,7 +8,7 @@ from models.plot import PlotModel
 
 class GraphModel(BaseModel):
     graphID: int = 0
-    plots_list: List[int] = [0]
+    plot_id_list: List[int] = [0]
 
 
 class ImageModel(BaseModel):
