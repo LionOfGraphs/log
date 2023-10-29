@@ -15,9 +15,10 @@ class UserService(object):
     _issuer: str
     _algorithm: str
     _audience: str
-    # TODO: make this a data base table with cleanup jobs
-    # current format: { "complete_token": "expiry_date" }
-    _expired_tokens: dict
+    # TODO: make this a data base table with cleanup
+    # user logout should also kill all its tokens on the cache
+    # current format: { "token_family": "expiry_date" }
+    _expired_token_family: dict
 
     def __init__(
         self,
@@ -32,7 +33,7 @@ class UserService(object):
         self._issuer = issuer
         self._algorithm = algorithm
         self._audience = audience
-        self._expired_tokens = {}
+        self._expired_token_family = {}
 
     def FetchKeys(self) -> str:
         return self._jwks
@@ -83,6 +84,11 @@ class UserService(object):
 
         refresh_expiration_delta = timedelta(days=1)
         refresh_expiration = now + refresh_expiration_delta
+        # NOTE: we create a refresh token "family" in every login to ensure we
+        # only keep track of the latest refresh token usage within the family,
+        # if there is a re-usage (i.e., the expiry date is closer than the one
+        # cached for the family) we "kill" the family
+        refresh_token_family = str(uuid.uuid4())
         refresh_token_payload = {
             "sub": user_entry.user_id,
             "iss": self._issuer,
@@ -90,6 +96,7 @@ class UserService(object):
             "iat": now,
             "exp": refresh_expiration,
             "aud": self._audience,
+            "fam": refresh_token_family,
         }
         refresh_token = jwt.encode(
             refresh_token_payload, self._jwk, algorithm=self._algorithm
@@ -103,6 +110,8 @@ class UserService(object):
 
     def RefreshToken(self, req: model.RefreshRequest) -> model.RefreshResponse:
         try:
+            # TODO: check if the user is logged in to begin with.
+
             claims = jwt.decode(
                 req.refresh_token,
                 self._jwk,
@@ -112,11 +121,14 @@ class UserService(object):
                 options={"require_exp": True},
             )
 
-            if req.refresh_token in self._expired_tokens:
-                raise Exception("refresh token re-usage")
+            if claims["fam"] in self._expired_token_family:
+                if int(self._expired_token_family[claims["fam"]]) >= int(claims["exp"]):
+                    # TODO: logout the user and force re-login
+                    raise Exception("refresh token re-usage")
 
-            # TODO: DANGER - current in-memory-database of repeated refresh tokens is not cleaned-up. This grows indefinetly
-            self._expired_tokens[req.refresh_token] = claims["exp"]
+            # TODO: DANGER - current in-memory-database of repeated refresh tokens is not cleaned-up.
+            # This grows indefinetly!
+            self._expired_token_family[claims["fam"]] = claims["exp"]
 
             now = datetime.utcnow()
 
@@ -129,6 +141,7 @@ class UserService(object):
                 "iat": now,
                 "exp": access_expiration,
                 "aud": self._audience,
+                "fam": claims["fam"],
             }
             access_token = jwt.encode(
                 access_token_payload, self._jwk, algorithm=self._algorithm
