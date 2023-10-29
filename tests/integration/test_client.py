@@ -16,7 +16,7 @@ def client():
         with open("..\\data\\test_01.csv", "rb") as f:
             rawData = f.read()
 
-        encodedPayload = b'{ "data":[{"datatype":"file", "filename":"test_01.csv"}]}'
+        encodedPayload = b'{ "data": [{"datatype":"file", "filename":"test_01.csv"}]}'
         response = stub.GeneratePlot(
             PlotRequest(encodedPayload=encodedPayload, rawData=rawData)
         )
@@ -25,6 +25,5 @@ def client():
 
 if __name__ == "__main__":
     r = client()
-    print(type(r.image))
     image = Image.open(io.BytesIO(r.image))
     image.save('tmp\\test.png')
