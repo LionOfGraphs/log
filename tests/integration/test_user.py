@@ -11,6 +11,9 @@ def test_user_flow():
     with grpc.insecure_channel(config("USER_SERVICE_ADDRESS")) as channel:
         stub = user_pb2_grpc.UserServiceStub(channel=channel)
 
+        response = stub.GetJwk(user_pb2.GetJwkRequest())
+        print("GetJwk success")
+
         response = stub.SignUp(
             user_pb2.SignUpRequest(
                 user_name="foo",
@@ -19,15 +22,54 @@ def test_user_flow():
                 hashed_password="hashpwd",
             )
         )
-        print(response)
+        print("SignUp success")
         response = stub.Login(
             user_pb2.LoginRequest(email="foo@bar.com", hashed_password="hashpwd")
         )
-        print(response)
-        response = stub.RefreshToken(
-            user_pb2.RefreshRequest(refresh_token=response.refresh_token)
+        print("Login success")
+        tk1 = response.refresh_token
+        response = stub.RefreshToken(user_pb2.RefreshRequest(refresh_token=tk1))
+        tk2 = response.new_refresh_token
+
+        print("RefreshToken success")
+        try:
+            response = stub.RefreshToken(user_pb2.RefreshRequest(refresh_token=tk1))
+        except:
+            print("RefreshToken: token re-usage failed")
+
+        try:
+            response = stub.RefreshToken(user_pb2.RefreshRequest(refresh_token=tk2))
+        except:
+            print("RefreshToken: token usage when forced log out happned failed")
+
+        response = stub.Login(
+            user_pb2.LoginRequest(email="foo@bar.com", hashed_password="hashpwd")
         )
-        print(response)
+        print("Login success")
+
+        response = stub.Logout(
+            user_pb2.LogoutRequest(),
+            metadata=(("access_token", response.access_token),),
+        )
+        print("Logout success")
+
+        try:
+            response = stub.RefreshToken(
+                user_pb2.RefreshRequest(refresh_token=response.refresh_token)
+            )
+        except:
+            print("RefreshToken: token usage when log out invoked")
+
+        response = stub.Login(
+            user_pb2.LoginRequest(email="foo@bar.com", hashed_password="hashpwd")
+        )
+        print("Login success")
+
+        response = stub.Unregister(
+            user_pb2.UnregisterRequest(),
+            metadata=(("access_token", response.access_token),),
+        )
+        print("Unregister success")
 
 
 if __name__ == "__main__":

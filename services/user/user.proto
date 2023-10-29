@@ -5,13 +5,26 @@ package user;
 // TODO: documentation
 service UserService {
   // TODO: documentation
+  rpc GetJwk(GetJwkRequest) returns (GetJwkResponse);
+  // TODO: documentation
   rpc Login(LoginRequest) returns (LoginResponse);
   // TODO: documentation
   rpc RefreshToken(RefreshRequest) returns (RefreshResponse);
   // TODO: documentation
   rpc SignUp(SignUpRequest) returns (SignUpResponse);
-  // TODO: Logout
-  // TODO: SignOut / Unregister
+  // TODO: documentation
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  // TODO: documentation
+  rpc Unregister(UnregisterRequest) returns (UnregisterResponse);
+}
+
+// TODO: documentation
+message GetJwkRequest{
+}
+
+// TODO: documentation
+message GetJwkResponse{
+  string jwk = 1;
 }
 
 // TODO: documentation
@@ -48,5 +61,20 @@ message SignUpRequest{
 
 // TODO: documentation
 message SignUpResponse{
+}
 
+// TODO: documentation
+message LogoutRequest{
+}
+
+// TODO: documentation
+message LogoutResponse{
+}
+
+// TODO: documentation
+message UnregisterRequest{
+}
+
+// TODO: documentation
+message UnregisterResponse{
 }

@@ -15,6 +15,14 @@ class DbUser(UserInfo):
     double_hashed_password: str
 
 
+# DbSession model contains the row information on the session table
+class DbSession(BaseModel):
+    session_id: str
+    user_id: str
+    lastest_refresh_token_exp: str
+    device_context: str | None = None
+
+
 # LoginRequest model will just contain basic information necessary on login
 class LoginRequest(BaseModel):
     email: str
@@ -45,3 +53,13 @@ class SignupRequest(BaseModel):
     full_name: str
     email: str
     hashed_password: str
+
+
+# LogoutRequest TODO: docstring
+class LogoutRequest(BaseModel):
+    access_token: str
+
+
+# UnregisterRequest TODO: docstring
+class UnregisterRequest(BaseModel):
+    access_token: str
