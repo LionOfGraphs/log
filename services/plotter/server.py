@@ -17,14 +17,14 @@ class PlotterServiceServicer(plotter_grpc.PlotterServiceServicer):
         payload = PayloadModel(**json.loads(decodedPayload))
 
         image = plot(rawData=request.rawData, payload=payload)
-        
+
         return PlotResponse(image=image)
 
 
 def run():
     address = config("SERVER_ADDRESS")
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    
+
     plotter_grpc.add_PlotterServiceServicer_to_server(PlotterServiceServicer(), server)
     server.add_insecure_port(address)
     server.start()

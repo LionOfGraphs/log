@@ -3,6 +3,7 @@ from typing import Optional, Literal
 from uuid import UUID, uuid4
 
 from matplotlib.layout_engine import LayoutEngine
+from matplotlib.figure import Figure
 
 from models.kwargs import KwargsFigureModel
 
@@ -30,11 +31,25 @@ class FigureModel(BaseModel):
     dpi: float = 100.0
     facecolor: str = "white"
     edgecolor: str = "white"
+    frameon: bool = True
+    FigureClass: FigureClass = Figure
+    clear: bool = False
+    layout: Optional[Literal["constrained", "compressed", "tight", "none"] | LayoutEngine | None] = None
+    # kwargs: Optional[KwargsFigureModel] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class FigureBaseModel(BaseModel):
+    figsize: tuple[float] = (6.4, 4.8)
+    dpi: float = 100.0
+    facecolor: str = "white"
+    edgecolor: str = "white"
     linewidth: float = 0.0
     frameon: bool = True
     subplotpars: SubplotParamsModel = SubplotParamsModel()
-    # layout: Optional[Literal["constrained", "compressed", "tight"] | LayoutEngine | None]
-    # kwargs: Optional[KwargsFigureModel]
+    layout: Optional[Literal["constrained", "compressed", "tight", "none"] | LayoutEngine | None] = None
+    kwargs: Optional[KwargsFigureModel] = None
 
     class Config:
         arbitrary_types_allowed = True
