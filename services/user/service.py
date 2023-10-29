@@ -15,18 +15,14 @@ class UserService(object):
     _issuer: str
     _algorithm: str
     _audience: str
-    # TODO: make this a data base table with cleanup
-    # user logout should also kill all its tokens on the cache
-    # current format: { "token_family": "expiry_date" }
-    _expired_token_family: dict
 
     def __init__(
         self,
         db: database.DatabaseClient,
         jwk: str,
-        issuer: str = "logusersvc",
+        issuer: str = "user-svc-log",
         algorithm: str = "HS256",
-        audience: str = "logsvcs",
+        audience: str = "log-svcs",
     ) -> None:
         self._database_client = db
         self._jwk = jwk
@@ -35,8 +31,8 @@ class UserService(object):
         self._audience = audience
         self._expired_token_family = {}
 
-    def FetchKeys(self) -> str:
-        return self._jwks
+    def GetJwk(self) -> str:
+        return self._jwk
 
     def Login(self, req: model.LoginRequest) -> model.LoginResponse:
         user_entry = self._database_client.GetUser({"email": req.email})
@@ -52,6 +48,13 @@ class UserService(object):
             # TODO: don't expose info and make it custom exception
             raise Exception(f"user {user_entry.user_name} is disabled")
 
+        # NOTE: we create a session ID in every login to ensure we
+        # only keep track of the latest refresh token usage within the session,
+        # if there is a re-usage (i.e., the expiry date is closer than the one
+        # cached for the session) we "kill" the session and force re-login.
+        # if the user logs out, we also terminate the session and invalidate
+        # the refresh token usage.
+        session_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
         access_expiration_delta = timedelta(seconds=3600)
@@ -63,6 +66,7 @@ class UserService(object):
             "iat": now,
             "exp": access_expiration,
             "aud": self._audience,
+            "sid": session_id,
         }
         access_token = jwt.encode(
             access_token_payload, self._jwk, algorithm=self._algorithm
@@ -84,11 +88,16 @@ class UserService(object):
 
         refresh_expiration_delta = timedelta(days=1)
         refresh_expiration = now + refresh_expiration_delta
-        # NOTE: we create a refresh token "family" in every login to ensure we
-        # only keep track of the latest refresh token usage within the family,
-        # if there is a re-usage (i.e., the expiry date is closer than the one
-        # cached for the family) we "kill" the family
-        refresh_token_family = str(uuid.uuid4())
+        self._database_client.UpsertSession(
+            model.DbSession(
+                session_id=session_id,
+                user_id=user_entry.user_id,
+                # NOTE: refresh token into UNIX int timestamp
+                # the record is inserted with "no refresh token used"
+                lastest_refresh_token_exp="0",
+                device_context="foo",
+            )
+        )
         refresh_token_payload = {
             "sub": user_entry.user_id,
             "iss": self._issuer,
@@ -96,7 +105,7 @@ class UserService(object):
             "iat": now,
             "exp": refresh_expiration,
             "aud": self._audience,
-            "fam": refresh_token_family,
+            "sid": session_id,
         }
         refresh_token = jwt.encode(
             refresh_token_payload, self._jwk, algorithm=self._algorithm
@@ -110,8 +119,6 @@ class UserService(object):
 
     def RefreshToken(self, req: model.RefreshRequest) -> model.RefreshResponse:
         try:
-            # TODO: check if the user is logged in to begin with.
-
             claims = jwt.decode(
                 req.refresh_token,
                 self._jwk,
@@ -121,14 +128,24 @@ class UserService(object):
                 options={"require_exp": True},
             )
 
-            if claims["fam"] in self._expired_token_family:
-                if int(self._expired_token_family[claims["fam"]]) >= int(claims["exp"]):
-                    # TODO: logout the user and force re-login
-                    raise Exception("refresh token re-usage")
+            if "sid" not in claims:
+                # TODO: don't expose info, log it, and make it custom exception
+                raise Exception(f"refresh token did not have session ID claim")
+            session_entry = self._database_client.GetSession(
+                filters={"session_id": claims["sid"]}
+            )
 
-            # TODO: DANGER - current in-memory-database of repeated refresh tokens is not cleaned-up.
-            # This grows indefinetly!
-            self._expired_token_family[claims["fam"]] = claims["exp"]
+            # NOTE: if we attempt to re-use a refresh token, remove the session and
+            # force the user to re-login
+            if int(session_entry.lastest_refresh_token_exp) >= int(claims["exp"]):
+                self._database_client.DeleteSession(session_id=session_entry.session_id)
+                raise Exception(
+                    f"refresh token re-usage, exp got {claims['exp']}, exp stored {session_entry.lastest_refresh_token_exp}"
+                )
+
+            # NOTE: if it's a first refresh token usage, refresh the DB record
+            session_entry.lastest_refresh_token_exp = claims["exp"]
+            self._database_client.UpsertSession(session=session_entry)
 
             now = datetime.utcnow()
 
@@ -141,7 +158,7 @@ class UserService(object):
                 "iat": now,
                 "exp": access_expiration,
                 "aud": self._audience,
-                "fam": claims["fam"],
+                "sid": claims["sid"],
             }
             access_token = jwt.encode(
                 access_token_payload, self._jwk, algorithm=self._algorithm
@@ -156,6 +173,7 @@ class UserService(object):
                 "iat": now,
                 "exp": refresh_expiration,
                 "aud": self._audience,
+                "sid": claims["sid"],
             }
             new_refresh_token = jwt.encode(
                 refresh_token_payload, self._jwk, algorithm=self._algorithm
@@ -182,7 +200,7 @@ class UserService(object):
     def SignUp(self, req: model.SignupRequest) -> None:
         try:
             self._database_client.GetUser({"email": req.email})
-            # TODO: named exception to give a nice HTTP code that the front-end can indicate
+            # TODO: named exception to give a nice gRPC code that the front-end can indicate
             # this following message to the user.
             raise Exception(
                 f"the email {req.email} already has a user associated with it"
@@ -195,7 +213,7 @@ class UserService(object):
         double_hashed_password = hashlib.sha256(
             req.hashed_password.encode("utf-8")
         ).hexdigest()
-        self._database_client.RegisterUser(
+        self._database_client.AddUser(
             model.DbUser(
                 user_id=new_user_id,
                 user_name=req.user_name,
@@ -206,3 +224,15 @@ class UserService(object):
                 double_hashed_password=double_hashed_password,
             )
         )
+
+    def Logout(self, req: model.LogoutRequest) -> None:
+        # NOTE: this assumes the server already verified them, being the entry point of the request
+        claims = jwt.get_unverified_claims(req.access_token)
+        self._database_client.DeleteSession(session_id=claims["sid"])
+
+    def Unregister(self, req: model.UnregisterRequest) -> None:
+        # NOTE: this assumes the server already verified them, being the entry point of the request
+        claims = jwt.get_unverified_claims(req.access_token)
+        # TODO: make the delete user call a bit safer, not only token based
+        # but some sort of confirmation, e.g., email
+        self._database_client.DeleteUser(user_id=claims["sub"])

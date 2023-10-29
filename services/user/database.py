@@ -14,7 +14,9 @@ class DatabaseClient(object):
     # TODO: docstring with available filters
     def GetUser(self, filters: dict[str, str]) -> model.DbUser:
         cur = self._con.cursor()
-        query = "SELECT user_id, user_name, full_name, email, user_disabled, double_hashed_password FROM user"
+        query = """
+SELECT user_id, user_name, full_name, email, user_disabled, double_hashed_password
+FROM user"""
         params = []
         if len(filters) > 0:
             query += " WHERE"
@@ -41,9 +43,11 @@ class DatabaseClient(object):
             double_hashed_password=user_rows[0][5],
         )
 
-    def RegisterUser(self, user: model.DbUser) -> None:
+    def AddUser(self, user: model.DbUser) -> None:
         cur = self._con.cursor()
-        query = "INSERT INTO user(user_id, user_name, full_name, email, user_disabled, double_hashed_password) VALUES (?, ?, ?, ?, ?, ?)"
+        query = """
+INSERT INTO user(user_id, user_name, full_name, email, user_disabled, double_hashed_password) 
+VALUES (?, ?, ?, ?, ?, ?)"""
         cur.execute(
             query,
             (
@@ -55,3 +59,75 @@ class DatabaseClient(object):
                 user.double_hashed_password,
             ),
         )
+        self._con.commit()
+
+    def DeleteUser(self, user_id: str) -> None:
+        cur = self._con.cursor()
+        query = """
+DELETE FROM user
+WHERE user_id=?"""
+        cur.execute(
+            query,
+            (user_id,),
+        )
+        self._con.commit()
+
+    def GetSession(self, filters: dict[str, str]) -> model.DbSession:
+        cur = self._con.cursor()
+        query = """
+SELECT session_id, user_id, lastest_refresh_token_exp, device_context
+FROM session"""
+        params = []
+        if len(filters) > 0:
+            query += " WHERE"
+        for filter_key, filter_value in filters.items():
+            query += f" {filter_key}=? AND"
+            params.append(filter_value)
+        query = query[:-3]  # remove last AND
+        res = cur.execute(query, tuple(params))
+        session_rows = res.fetchall()
+
+        if len(session_rows) != 1 or len(session_rows[0]) < 4:
+            # TODO: named exceptions without leaking info
+            raise Exception(
+                f"unexpected rows GetSession, filters: {filters}, rows: {session_rows}"
+            )
+
+        return model.DbSession(
+            session_id=session_rows[0][0],
+            user_id=session_rows[0][1],
+            lastest_refresh_token_exp=session_rows[0][2],
+            device_context=session_rows[0][3],
+        )
+
+    def UpsertSession(self, session: model.DbSession) -> None:
+        cur = self._con.cursor()
+        # NOTE: assumption for the DB, the session ID and user ID cannot be updated
+        query = """
+INSERT INTO session(session_id, user_id, lastest_refresh_token_exp, device_context)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(session_id) DO UPDATE SET
+lastest_refresh_token_exp=?, device_context=?"""
+        cur.execute(
+            query,
+            (
+                session.session_id,
+                session.user_id,
+                session.lastest_refresh_token_exp,
+                session.device_context,
+                session.lastest_refresh_token_exp,
+                session.device_context,
+            ),
+        )
+        self._con.commit()
+
+    def DeleteSession(self, session_id: str) -> None:
+        cur = self._con.cursor()
+        query = """
+DELETE FROM session
+WHERE session_id=?"""
+        cur.execute(
+            query,
+            (session_id,),
+        )
+        self._con.commit()

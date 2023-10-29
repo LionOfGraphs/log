@@ -8,6 +8,8 @@ import server
 import service
 import database
 
+import auth
+
 
 def serve():
     address = config("SERVER_ADDRESS")
@@ -25,7 +27,26 @@ def serve():
         service_handler=service_handler,
     )
 
-    grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    # TODO: don't have this so hardcoded like this
+    def jwk_fetch(_: str) -> str:
+        return jwk
+
+    interceptors = [
+        auth.AuthServerInterceptor(
+            jwk_fetch=jwk_fetch,
+            unprotected_endpoints=[
+                "/user.UserService/GetJwk",
+                "/user.UserService/Login",
+                "/user.UserService/SignUp",
+                "/user.UserService/RefreshToken",
+            ],
+            audience="log-svcs",
+        )
+    ]
+
+    grpc_server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10), interceptors=interceptors
+    )
     user_pb2_grpc.add_UserServiceServicer_to_server(service_servicer, grpc_server)
     grpc_server.add_insecure_port(address)
     grpc_server.start()
