@@ -1,15 +1,14 @@
-from pydantic import BaseModel
-from typing import Optional, Literal, List
-
-from pandas import DataFrame
-from matplotlib.markers import MarkerStyle
+from typing import List, Literal, Optional
 from matplotlib.colors import Colormap, Normalize
-
-from models.kwargs import KwargsLine2DModel, KwargsCollectionModel
+from matplotlib.markers import MarkerStyle
+from models.kwargs import KwargsCollectionModel, KwargsLine2DModel
+from pandas import DataFrame
+from pydantic import BaseModel
 
 
 class PlotModel(BaseModel):
     plotID: int = 0
+    plotType: str = "LinePlotModel"
 
     class Config:
         arbitrary_types_allowed = True
