@@ -54,4 +54,12 @@ def serve():
 
 
 if __name__ == "__main__":
-    serve()
+    try:
+        serve()
+    # NOTE: expected exception
+    except KeyboardInterrupt:
+        exit(0)
+    except Exception as e:
+        print("unexpected exception")
+        print(e)
+        exit(1)

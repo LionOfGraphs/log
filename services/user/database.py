@@ -43,15 +43,22 @@ FROM user"""
             double_hashed_password=user_rows[0][5],
         )
 
-    def AddUser(self, user: model.DbUser) -> None:
+    def UpsertUser(self, user: model.DbUser) -> None:
         cur = self._con.cursor()
         query = """
 INSERT INTO user(user_id, user_name, full_name, email, user_disabled, double_hashed_password) 
-VALUES (?, ?, ?, ?, ?, ?)"""
+VALUES (?, ?, ?, ?, ?, ?)
+ON CONFLICT(user_id) DO UPDATE SET
+user_name=?, full_name=?, email=?, user_disabled=?, double_hashed_password=?"""
         cur.execute(
             query,
             (
                 user.user_id,
+                user.user_name,
+                user.full_name,
+                user.email,
+                user.user_disabled,
+                user.double_hashed_password,
                 user.user_name,
                 user.full_name,
                 user.email,
