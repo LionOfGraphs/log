@@ -1,7 +1,7 @@
 from typing import Annotated
-from pydantic import BaseModel
 
 import grpc
+#from grpc_interceptor.exceptions import GrpcException
 import uvicorn
 import user_pb2_grpc, user_pb2
 from decouple import config
@@ -17,12 +17,19 @@ async def root():
     return {"message":"Hello World!"}
 
 def authenticate_user(username, hashed_password):
-    with grpc.insecure_channel("localhost:" + config("MS2_PORT")) as channel:
-        stub = user_pb2_grpc.UserServiceStub(channel = channel)
-        response = stub.Login(
-            user_pb2.LoginRequest(username = username, hashed_password = hashed_password)
-        )
-        return response.auth_token
+
+    try:
+        with grpc.insecure_channel(config("SERVER_ADDRESS") + ":" + config("SERVER_PORT")) as channel:
+            stub = user_pb2_grpc.UserServiceStub(channel = channel)
+            response = stub.Login(
+                user_pb2.LoginRequest(username = username, hashed_password = hashed_password)
+            )
+            return {"identity_token" : response.identity_token, "access_token" : response.access_token, "refresh_token" : response.refresh_token}
+    except grpc.RpcError as rpcError:
+        raise HTTPException(status_code=rpcError.code(), detail="Grpc Error")
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
 
 @app.post("/token")
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
@@ -39,8 +46,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
 def run():
     host = config("GATEWAY_HOST")
     port = config("GATEWAY_PORT", cast = int)
-    log_level = config("LOG_LEVEL")
-    uvicorn.run("server.app", host = host, port = port, log_level = log_level, reload = True)
+    uvicorn.run("server:app", host = host, port = port, reload = True)
 
 if __name__ == "__main__":
     run()
