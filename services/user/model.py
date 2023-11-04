@@ -23,6 +23,11 @@ class DbSession(BaseModel):
     device_context: str | None = None
 
 
+# AccessTokenReq TODO: docstring
+class Access(BaseModel):
+    access_token: str
+
+
 # LoginRequest model will just contain basic information necessary on login
 class LoginRequest(BaseModel):
     email: str
@@ -55,11 +60,6 @@ class SignupRequest(BaseModel):
     hashed_password: str
 
 
-# LogoutRequest TODO: docstring
-class LogoutRequest(BaseModel):
-    access_token: str
-
-
-# UnregisterRequest TODO: docstring
-class UnregisterRequest(BaseModel):
+# UpdateUserReq TODO: docstring
+class UpdateUserReq(UserInfo):
     access_token: str

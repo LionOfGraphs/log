@@ -1,5 +1,5 @@
-import io
 import grpc
+import time
 from decouple import config
 
 import user_pb2
@@ -16,9 +16,11 @@ def test_user_flow():
 
         response = stub.SignUp(
             user_pb2.SignUpRequest(
-                user_name="foo",
-                full_name="foo bar",
-                email="foo@bar.com",
+                user_info=user_pb2.UserInfo(
+                    user_name="foo",
+                    full_name="foo bar",
+                    email="foo@bar.com",
+                ),
                 hashed_password="hashpwd",
             )
         )
@@ -64,10 +66,35 @@ def test_user_flow():
             user_pb2.LoginRequest(email="foo@bar.com", hashed_password="hashpwd")
         )
         print("Login success")
+        tk3 = response.access_token
+
+        response = stub.GetUserInfo(
+            user_pb2.GetUserInfoRequest(),
+            metadata=(("access_token", tk3),),
+        )
+        print("GetUserInfo success")
+        print(response)
+
+        response = stub.UpdateUserInfo(
+            user_pb2.UpdateUserInfoRequest(
+                user_info=user_pb2.UserInfo(
+                    full_name="bar foo",
+                )
+            ),
+            metadata=(("access_token", tk3),),
+        )
+        print("UpdateUserInfo success")
+
+        response = stub.GetUserInfo(
+            user_pb2.GetUserInfoRequest(),
+            metadata=(("access_token", tk3),),
+        )
+        print("GetUserInfo success")
+        print(response)
 
         response = stub.Unregister(
             user_pb2.UnregisterRequest(),
-            metadata=(("access_token", response.access_token),),
+            metadata=(("access_token", tk3),),
         )
         print("Unregister success")
 

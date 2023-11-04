@@ -1,3 +1,4 @@
+from typing import List
 from jose import jwt
 from datetime import datetime, timedelta
 import hashlib
@@ -213,7 +214,7 @@ class UserService(object):
         double_hashed_password = hashlib.sha256(
             req.hashed_password.encode("utf-8")
         ).hexdigest()
-        self._database_client.AddUser(
+        self._database_client.UpsertUser(
             model.DbUser(
                 user_id=new_user_id,
                 user_name=req.user_name,
@@ -225,14 +226,39 @@ class UserService(object):
             )
         )
 
-    def Logout(self, req: model.LogoutRequest) -> None:
+    def Logout(self, req: model.Access) -> None:
         # NOTE: this assumes the server already verified them, being the entry point of the request
         claims = jwt.get_unverified_claims(req.access_token)
         self._database_client.DeleteSession(session_id=claims["sid"])
 
-    def Unregister(self, req: model.UnregisterRequest) -> None:
+    def Unregister(self, req: model.Access) -> None:
         # NOTE: this assumes the server already verified them, being the entry point of the request
         claims = jwt.get_unverified_claims(req.access_token)
         # TODO: make the delete user call a bit safer, not only token based
         # but some sort of confirmation, e.g., email
         self._database_client.DeleteUser(user_id=claims["sub"])
+
+    def GetUserInfo(self, req: model.Access) -> model.UserInfo:
+        # NOTE: this assumes the server already verified them, being the entry point of the request
+        claims = jwt.get_unverified_claims(req.access_token)
+        user_entry = self._database_client.GetUser({"user_id": claims["sub"]})
+        return user_entry
+
+    def ListUserInfo(self, _: model.Access) -> List[model.UserInfo]:
+        # TODO: check against a DB admin if we have permissions to check this up
+        return []
+
+    def UpdateUserInfo(self, req: model.UpdateUserReq) -> model.UserInfo:
+        # NOTE: this assumes the server already verified them, being the entry point of the request
+        claims = jwt.get_unverified_claims(req.access_token)
+        # NOTE: always force you can only update your user entry
+        req.user_id = claims["sub"]
+
+        # NOTE: read before write, do not do this if you're a sane person
+        user_entry = self._database_client.GetUser({"user_id": claims["sub"]})
+        user_entry_attrs = vars(user_entry)
+        for key, value in vars(req).items():
+            if key in user_entry_attrs and value != "":
+                user_entry_attrs[key] = value
+        self._database_client.UpsertUser(user=user_entry)
+        return user_entry

@@ -4,6 +4,7 @@ package user;
 
 // TODO: documentation
 service UserService {
+  /**************************** User session **************************/
   // TODO: documentation
   rpc GetJwk(GetJwkRequest) returns (GetJwkResponse);
   // TODO: documentation
@@ -11,11 +12,28 @@ service UserService {
   // TODO: documentation
   rpc RefreshToken(RefreshRequest) returns (RefreshResponse);
   // TODO: documentation
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  /**************************** User creation **************************/
+  // TODO: documentation
   rpc SignUp(SignUpRequest) returns (SignUpResponse);
   // TODO: documentation
-  rpc Logout(LogoutRequest) returns (LogoutResponse);
-  // TODO: documentation
   rpc Unregister(UnregisterRequest) returns (UnregisterResponse);
+
+  /**************************** User management ************************/
+  // TODO: documentation
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse);
+  // TODO: documentation
+  rpc ListUserInfo(ListUserInfoRequest) returns (ListUserInfoResponse);
+  // TODO: documentation
+  rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse);
+}
+
+// TODO: documentation
+message UserInfo{
+  string user_name = 1;
+  string full_name = 2;
+  string email = 3;
 }
 
 // TODO: documentation
@@ -53,10 +71,8 @@ message RefreshResponse {
 
 // TODO: documentation
 message SignUpRequest{
-  string user_name = 1;
-  string full_name = 2;
-  string email = 3;
-  string hashed_password = 4;
+  UserInfo user_info = 1;
+  string hashed_password = 2;
 }
 
 // TODO: documentation
@@ -77,4 +93,31 @@ message UnregisterRequest{
 
 // TODO: documentation
 message UnregisterResponse{
+}
+
+// TODO: documentation
+message GetUserInfoRequest{
+}
+
+// TODO: documentation
+message GetUserInfoResponse{
+  UserInfo user_info = 1;
+}
+
+// TODO: documentation
+message ListUserInfoRequest{
+}
+
+// TODO: documentation
+message ListUserInfoResponse{
+  repeated UserInfo user_infos = 1;
+}
+
+// TODO: documentation
+message UpdateUserInfoRequest{
+  UserInfo user_info = 1;
+}
+
+// TODO: documentation
+message UpdateUserInfoResponse{
 }
