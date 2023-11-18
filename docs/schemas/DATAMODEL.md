@@ -8,3 +8,5 @@ Plotter Data Model @ v0.2
 ![](./plotter_dataModel_v0.2.png)
 
 PlotModel is based according to the matplotlib lybrary stable@[v3.8](https://matplotlib.org/stable/plot_types/index.html).
+
+Some plot examples can be found [here](https://matplotlib.org/stable/gallery/index.html).
