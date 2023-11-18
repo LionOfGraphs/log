@@ -16,7 +16,7 @@ class DatabaseClient(object):
         cur = self._con.cursor()
         query = """
 SELECT user_id, user_name, full_name, email, user_disabled, double_hashed_password
-FROM user"""
+FROM user_table"""
         params = []
         if len(filters) > 0:
             query += " WHERE"
@@ -27,6 +27,7 @@ FROM user"""
 
         res = cur.execute(query, tuple(params))
         user_rows = res.fetchall()
+        cur.close()
 
         if len(user_rows) != 1 or len(user_rows[0]) < 6:
             # TODO: named exceptions without leaking info
@@ -46,7 +47,7 @@ FROM user"""
     def UpsertUser(self, user: model.DbUser) -> None:
         cur = self._con.cursor()
         query = """
-INSERT INTO user(user_id, user_name, full_name, email, user_disabled, double_hashed_password) 
+INSERT INTO user_table(user_id, user_name, full_name, email, user_disabled, double_hashed_password) 
 VALUES (?, ?, ?, ?, ?, ?)
 ON CONFLICT(user_id) DO UPDATE SET
 user_name=?, full_name=?, email=?, user_disabled=?, double_hashed_password=?"""
@@ -67,23 +68,25 @@ user_name=?, full_name=?, email=?, user_disabled=?, double_hashed_password=?"""
             ),
         )
         self._con.commit()
+        cur.close()
 
     def DeleteUser(self, user_id: str) -> None:
         cur = self._con.cursor()
         query = """
-DELETE FROM user
+DELETE FROM user_table
 WHERE user_id=?"""
         cur.execute(
             query,
             (user_id,),
         )
         self._con.commit()
+        cur.close()
 
     def GetSession(self, filters: dict[str, str]) -> model.DbSession:
         cur = self._con.cursor()
         query = """
 SELECT session_id, user_id, lastest_refresh_token_exp, device_context
-FROM session"""
+FROM session_table"""
         params = []
         if len(filters) > 0:
             query += " WHERE"
@@ -93,6 +96,7 @@ FROM session"""
         query = query[:-3]  # remove last AND
         res = cur.execute(query, tuple(params))
         session_rows = res.fetchall()
+        cur.close()
 
         if len(session_rows) != 1 or len(session_rows[0]) < 4:
             # TODO: named exceptions without leaking info
@@ -111,7 +115,7 @@ FROM session"""
         cur = self._con.cursor()
         # NOTE: assumption for the DB, the session ID and user ID cannot be updated
         query = """
-INSERT INTO session(session_id, user_id, lastest_refresh_token_exp, device_context)
+INSERT INTO session_table(session_id, user_id, lastest_refresh_token_exp, device_context)
 VALUES (?, ?, ?, ?)
 ON CONFLICT(session_id) DO UPDATE SET
 lastest_refresh_token_exp=?, device_context=?"""
@@ -127,14 +131,19 @@ lastest_refresh_token_exp=?, device_context=?"""
             ),
         )
         self._con.commit()
+        cur.close()
 
     def DeleteSession(self, session_id: str) -> None:
         cur = self._con.cursor()
         query = """
-DELETE FROM session
+DELETE FROM session_table
 WHERE session_id=?"""
         cur.execute(
             query,
             (session_id,),
         )
         self._con.commit()
+        cur.close()
+
+    def close(self) -> None:
+        self._con.close()

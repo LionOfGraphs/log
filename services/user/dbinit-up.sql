@@ -1,4 +1,4 @@
-CREATE TABLE user(
+CREATE TABLE user_table(
     user_id text primary key,
     user_name text,
     full_name text,
@@ -7,7 +7,7 @@ CREATE TABLE user(
     double_hashed_password text
 );
 
-CREATE TABLE session(
+CREATE TABLE session_table(
     session_id text primary key,
     user_id text,
     lastest_refresh_token_exp text,
