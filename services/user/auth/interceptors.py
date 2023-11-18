@@ -1,6 +1,7 @@
 import grpc
 import grpc_interceptor
 
+from datetime import datetime
 from jose import jwt
 from grpc_interceptor.exceptions import GrpcException
 from typing import Any, Callable, List
@@ -9,32 +10,45 @@ from typing import Any, Callable, List
 class AuthServerInterceptor(grpc_interceptor.ServerInterceptor):
     """TODO: write documentation on how to use this"""
 
-    # NOTE the _jwks is a cache map of issuer -> jwk
-    # for supported issuers in the jwk_fetch function should support
-    # the invokation for that issuer, e.g., for our own user service:
-    #
-    # def jwk_fetch(iss: str) -> str:
-    #    if iss not "user-svc-log":
-    #       raise Exception("unsupported issuer")
-    #    with grpc.insecure_channel(config("USER_SERVICE_ADDRESS")) as channel:
-    #       stub = user_pb2_grpc.UserServiceStub(channel=channel)
-    #       response = stub.GetJwk(user_pb2.GetJwkRequest())
-    #       return response.jwk
-    #
+    """
+     The _jwks is a cache map of issuer -> jwk
+     for supported issuers in the jwk_fetch function should support
+     the invocation for that issuer, e.g., for our own user service:
+    
+     def jwk_fetch(iss: str) -> str:
+        if iss not "user-svc-log":
+           raise Exception("unsupported issuer")
+        with grpc.insecure_channel(config("USER_SERVICE_ADDRESS")) as channel:
+           stub = user_pb2_grpc.UserServiceStub(channel=channel)
+           response = stub.GetJwk(user_pb2.GetJwkRequest())
+           return response.jwk
+    """
     _jwks: dict[str, str]
-    # NOTE the list of endpoints for this interceptor to ignore
+    """
+    The list of endpoints for this interceptor to ignore.
+    """
     _unprotected_endpoints: List[str]
+    """
+    The map of endpoints and roles that have access.
+    """
+    _permissions: dict[str, List[str]]
+    """
+    The audience for which this interceptor will validate.
+    """
+    _audience: str
 
     def __init__(
         self,
         jwk_fetch: Callable[[str], str],
         unprotected_endpoints: List[str],
         audience: str,
+        permissions: dict[str, List[str]],
     ):
         self._jwks = {}
         self._jwk_fetch = jwk_fetch
         self._unprotected_endpoints = unprotected_endpoints
         self._audience = audience
+        self._permissions = permissions
 
     def intercept(
         self,
@@ -63,9 +77,22 @@ class AuthServerInterceptor(grpc_interceptor.ServerInterceptor):
             if "iss" not in claims:
                 context.abort(grpc.StatusCode.UNAUTHENTICATED, "no iss")
 
+            if int(datetime.utcnow().timestamp()) < int(claims["nbf"]):
+                context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED,
+                    "utilized before the not-before nbf",
+                )
+
             # NOTE: if the jwk is not in the cache, load it with the given jwks loader
             if claims["iss"] not in self._jwks:
                 self._jwks[claims["iss"]] = self._jwk_fetch(claims["iss"])
+
+            if method_name in self._permissions:
+                if claims["role"] not in self._permissions[method_name]:
+                    context.abort(
+                        grpc.StatusCode.UNAUTHENTICATED,
+                        "unauthorized role",
+                    )
 
             _ = jwt.decode(
                 access_token,

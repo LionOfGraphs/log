@@ -41,6 +41,13 @@ interceptors = [
             "/user.UserService/RefreshToken",
         ],
         audience="log-svcs",
+        permissions={
+            "/user.UserService/Logout": ["user", "admin"],
+            "/user.UserService/GetUserInfo": ["user", "admin"],
+            "/user.UserService/UpdateUserInfo": ["user", "admin"],
+            "/user.UserService/Unregister": ["user", "admin"],
+            "/user.UserService/ListUserInfo": ["admin"],
+        },
     )
 ]
 

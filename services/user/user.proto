@@ -47,7 +47,7 @@ message GetJwkResponse{
 
 // TODO: documentation
 message LoginRequest {
-  string username = 1;
+  string email = 1;
   string hashed_password = 2;
 }
 
