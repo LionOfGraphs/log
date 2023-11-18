@@ -68,6 +68,7 @@ class UserService(object):
             "exp": access_expiration,
             "aud": self._audience,
             "sid": session_id,
+            "role": "user",  # TODO: populate this with DB values when "admin" role is implemented
         }
         access_token = jwt.encode(
             access_token_payload, self._jwk, algorithm=self._algorithm

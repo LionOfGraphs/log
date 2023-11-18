@@ -4,7 +4,8 @@ CREATE TABLE user_table(
     full_name text,
     email text,
     user_disabled boolean,
-    double_hashed_password text
+    double_hashed_password text,
+    user_role text
 );
 
 CREATE TABLE session_table(
