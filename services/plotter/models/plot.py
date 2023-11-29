@@ -4,11 +4,13 @@ from matplotlib.markers import MarkerStyle
 from models.kwargs import KwargsCollectionModel, KwargsLine2DModel
 from pandas import DataFrame
 from pydantic import BaseModel
+from data import DataModel
 
 
 class PlotModel(BaseModel):
     plotID: int = 0
     plotType: str = "LinePlotModel"
+    data: DataModel = DataModel()
 
     class Config:
         arbitrary_types_allowed = True
