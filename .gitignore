@@ -307,3 +307,6 @@ dist
 
 # local databases
 *.sqlite3
+
+# temp drawio files
+~*.bkp
